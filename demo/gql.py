@@ -51,22 +51,6 @@ class Query(graphene.ObjectType):
         return User.get_query(info).filter(UserModel.username == username).all()
 
 
-class CreateUser(graphene.Mutation):
-    """Create user"""
-    class Arguments:
-        username = graphene.String()
-        email = graphene.String()
-    
-    user = graphene.Field(User)
-    ok = graphene.Boolean()
-
-    def mutate(self, info, username, email):
-        user = UserModel(username=username, email=email)
-        db.session.add(user)
-        db.session.commit()
-        return CreateUser(user=user, ok=True)
-
-
 class SignUp(graphene.Mutation):
     class Arguments:
         username = graphene.String(required=True)
@@ -107,23 +91,60 @@ class CreatePost(graphene.Mutation):
 
     @require_auth
     def mutate(self, info, **kwargs):
-        user = UserModel.query.filter_by(id=kwargs.get('author_id')).first()
-        if kwargs.get('user') != user:
-            raise GraphQLError("You don't have permission to update this post")
+        author = UserModel.query.filter_by(id=kwargs.get('author_id')).first()
+        if kwargs.get('user') != author:
+            raise GraphQLError("You don't have permission to create this post")
         post = PostModel()
-        post.from_dict(kwargs, author=user, new_post=True)
+        post.from_dict(kwargs, author=author, new_post=True)
         db.session.add(post)
         db.session.commit()
         return CreatePost(post=post)
 
 
+class UpdatePost(graphene.Mutation):
+    class Arguments:
+        id = graphene.Int(required=True)
+        body = graphene.String()
+    
+    post = graphene.Field(Post)
+
+    @require_auth
+    def mutate(self, info, **kwargs):
+        post = PostModel.query.filter_by(id=kwargs.get('id')).first()
+        author = UserModel.query.filter_by(id=post.author.id).first()
+        if kwargs.get('user') != author:
+            raise GraphQLError("You don't have permission to update this post")
+        post.from_dict(kwargs, new_post=False)
+        db.session.add(post)
+        db.session.commit()
+        return UpdatePost(post=post)
+
+
+class DeletePost(graphene.Mutation):
+    class Arguments:
+        id = graphene.Int(required=True)
+    
+    ok = graphene.Boolean()
+
+    @require_auth
+    def mutate(self, info, **kwargs):
+        post = PostModel.query.filter_by(id=kwargs.get('id')).first()
+        author = UserModel.query.filter_by(id=post.author.id).first()
+        if kwargs.get('user') != author:
+            raise GraphQLError("You don't have permission to update this post")
+        db.session.delete(post)
+        db.session.commit()
+        return DeletePost(ok=True)
+
+
 class Mutation(graphene.ObjectType):
     """Mutation endpoint for GraphQL API"""
-    create_user = CreateUser.Field()
     signup = SignUp.Field()
     login = Login.Field()
 
     create_post = CreatePost.Field()
+    update_post = UpdatePost.Field()
+    delete_post = DeletePost.Field()
 
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
