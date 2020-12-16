@@ -4,6 +4,7 @@ import { Switch, Route } from 'react-router-dom';
 import PostList from './PostList';
 import CreatePost from './CreatePost';
 import Header from './Header';
+import Login from './Login';
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
         <Switch>
           <Route exact path="/" component={PostList} />
           <Route exact path="/create" component={CreatePost} />
+          <Route exact path="/login" component={Login} />
         </Switch>
       </div>
     </div>

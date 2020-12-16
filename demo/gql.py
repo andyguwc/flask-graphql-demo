@@ -70,13 +70,13 @@ class SignUp(graphene.Mutation):
 
 class Login(graphene.Mutation):
     class Arguments:
-        username = graphene.String(required=True)
+        email = graphene.String(required=True)
         password = graphene.String(required=True)
     user = graphene.Field(User)
     auth_token = graphene.String()
 
     def mutate(self, info, **kwargs):
-        user = UserModel.query.filter_by(username=kwargs.get('username')).first()
+        user = UserModel.query.filter_by(email=kwargs.get('email')).first()
         if user is None or not user.verify_password(kwargs.get('password')):
             raise GraphQLError("Invalid Credentials")
         return Login(user=user, auth_token=user.encode_auth_token(user.id).decode())
@@ -85,15 +85,14 @@ class Login(graphene.Mutation):
 class CreatePost(graphene.Mutation):
     class Arguments:
         body = graphene.String(required=True)
-        author_id = graphene.Int(required=True)
 
     post = graphene.Field(Post)
 
     @require_auth
     def mutate(self, info, **kwargs):
-        author = UserModel.query.filter_by(id=kwargs.get('author_id')).first()
-        if kwargs.get('user') != author:
-            raise GraphQLError("You don't have permission to create this post")
+        author = kwargs.get('user')
+        if not author:
+            raise GraphQLError("Please log in to create this post")
         post = PostModel()
         post.from_dict(kwargs, author=author, new_post=True)
         db.session.add(post)

@@ -3,8 +3,8 @@ import { useMutation, gql } from '@apollo/client';
 import { useHistory } from 'react-router';
 
 const CREATE_POST_MUTATION = gql`
-  mutation CreatePostMutation($body: String!, $authorId: Int!) {
-    createPost(body: $body, authorId: $authorId) {
+  mutation CreatePostMutation($body: String!) {
+    createPost(body: $body) {
       post {
         id
         authorId
@@ -28,7 +28,6 @@ const CreatePost = () => {
   const [createPost] = useMutation(CREATE_POST_MUTATION, {
     variables: {
       body: formState.body,
-      authorId: 5,
     },
     onCompleted: () => history.push('/'),
   });
