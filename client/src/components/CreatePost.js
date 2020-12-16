@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, gql } from '@apollo/client';
+import { useHistory } from 'react-router';
 
 const CREATE_POST_MUTATION = gql`
   mutation CreatePostMutation($body: String!, $authorId: Int!) {
@@ -18,6 +19,8 @@ const CREATE_POST_MUTATION = gql`
 `;
 
 const CreatePost = () => {
+  const history = useHistory();
+
   const [formState, setFormState] = useState({
     body: '',
   });
@@ -27,6 +30,7 @@ const CreatePost = () => {
       body: formState.body,
       authorId: 5,
     },
+    onCompleted: () => history.push('/'),
   });
 
   return (
