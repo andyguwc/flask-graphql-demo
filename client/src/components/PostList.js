@@ -9,6 +9,18 @@ const GET_POSTS_QUERY = gql`
         node {
           id
           body
+          author {
+            username
+            id
+          }
+          timestamp
+          votes {
+            edges {
+              node {
+                id
+              }
+            }
+          }
         }
       }
     }
@@ -22,8 +34,8 @@ const PostList = () => {
     <>
       {data && (
         <>
-          {data.allPosts.edges.map(({ node }) => (
-            <Post key={node.id} post={node} />
+          {data.allPosts.edges.map(({ node }, index) => (
+            <Post key={node.id} post={node} index={index} />
           ))}
         </>
       )}
