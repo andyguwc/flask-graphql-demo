@@ -4,14 +4,12 @@ from datetime import datetime
 from demo.extensions import db
 
 
-class Post(db.Model):
-    __tablename__ = 'posts'
+class Vote(db.Model):
+    __tablename__ = 'votes'
     id = db.Column(db.Integer, primary_key=True)
-    body = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
-    author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-
-    votes = db.relationship('Vote', backref='post', lazy='dynamic')
+    post_id = db.Column(db.Integer, db.ForeignKey('posts.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
     def to_dict(self):
         return {

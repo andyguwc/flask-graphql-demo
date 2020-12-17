@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 import graphene
-from graphene import relay
+# from graphene import relay
 from graphql import GraphQLError
 from graphene_sqlalchemy import (SQLAlchemyConnectionField,
                                  SQLAlchemyObjectType)
 from demo.models import User as UserModel
 from demo.models import Post as PostModel
+from demo.models import Vote as VoteModel
+
 from demo.extensions import db
-from graphql_relay.node.node import from_global_id
+# from graphql_relay.node.node import from_global_id
 
 
 def require_auth(method):
@@ -21,29 +23,44 @@ def require_auth(method):
     return wrapper
 
 
+class CustomNode(graphene.Node):
+    class Meta:
+        name = 'customNode'
+
+    @staticmethod
+    def to_global_id(type, id):
+        return id
+
 class User(SQLAlchemyObjectType):
     """Users"""
     class Meta:
         model = UserModel
-        interfaces = (relay.Node, )
+        interfaces = (CustomNode, )
 
 
 class Post(SQLAlchemyObjectType):
     """Posts"""
     class Meta:
         model = PostModel
-        interfaces = (relay.Node, )
+        interfaces = (CustomNode, )
+
+
+class Vote(SQLAlchemyObjectType):
+    """Posts"""
+    class Meta:
+        model = VoteModel
+        interfaces = (CustomNode, )
 
 
 class Query(graphene.ObjectType):
     """Query endpoint for GraphQL API"""
-    node = relay.Node.Field()
+    node = CustomNode.Field()
     all_users = SQLAlchemyConnectionField(User.connection)
     all_posts = SQLAlchemyConnectionField(Post.connection)
 
     users_by_username = graphene.List(User, username=graphene.String())
-    user = relay.Node.Field(User)
-    post = relay.Node.Field(Post)
+    user = CustomNode.Field(User)
+    post = CustomNode.Field(Post)
 
     @staticmethod
     def resolve_users_by_username(parent, info, **args):
@@ -136,6 +153,24 @@ class DeletePost(graphene.Mutation):
         return DeletePost(ok=True)
 
 
+class CreateVote(graphene.Mutation):
+    class Arguments:
+        post_id = graphene.Int(required=True)
+
+    vote = graphene.Field(Vote)
+
+    @require_auth
+    def mutate(self, info, **kwargs):
+        author = kwargs.get('user')
+        if not author:
+            raise GraphQLError("Please log in to vote")
+
+        vote = VoteModel(post_id=kwargs.get('post_id'), author=author)
+        db.session.add(vote)
+        db.session.commit()
+        return CreateVote(vote=vote)
+
+
 class Mutation(graphene.ObjectType):
     """Mutation endpoint for GraphQL API"""
     signup = SignUp.Field()
@@ -144,6 +179,6 @@ class Mutation(graphene.ObjectType):
     create_post = CreatePost.Field()
     update_post = UpdatePost.Field()
     delete_post = DeletePost.Field()
-
+    create_vote = CreateVote.Field()
 
 schema = graphene.Schema(query=Query, mutation=Mutation)

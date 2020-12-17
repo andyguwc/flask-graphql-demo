@@ -2,7 +2,7 @@
 import os
 
 from demo.app import create_app
-from demo.models import User, Post
+from demo.models import User, Post, Vote
 from demo.extensions import db
 
 app = create_app(os.getenv('FLASK_CONFIG') or 'default')
@@ -10,4 +10,4 @@ app = create_app(os.getenv('FLASK_CONFIG') or 'default')
 
 @app.shell_context_processor
 def make_shell_context():
-    return dict(db=db, User=User, Post=Post)
+    return dict(db=db, User=User, Post=Post, Vote=Vote)
