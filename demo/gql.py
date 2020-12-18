@@ -59,6 +59,7 @@ class Query(graphene.ObjectType):
     all_posts = SQLAlchemyConnectionField(Post.connection)
 
     users_by_username = graphene.List(User, username=graphene.String())
+    posts_by_filter = graphene.List(Post, filter_text=graphene.String())
     user = CustomNode.Field(User)
     post = CustomNode.Field(Post)
 
@@ -66,6 +67,11 @@ class Query(graphene.ObjectType):
     def resolve_users_by_username(parent, info, **args):
         username = args.get('username')
         return User.get_query(info).filter(UserModel.username == username).all()
+
+    @staticmethod
+    def resolve_posts_by_filter(parent, info, **args):
+        filter_text = args.get('filter_text')
+        return Post.get_query(info).filter(PostModel.body.ilike(filter_text)).all()
 
 
 class SignUp(graphene.Mutation):
