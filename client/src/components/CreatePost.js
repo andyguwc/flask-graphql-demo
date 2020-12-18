@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useMutation, gql } from '@apollo/client';
 import { useHistory } from 'react-router';
+import { GET_POSTS_QUERY } from './PostList';
 
 const CREATE_POST_MUTATION = gql`
   mutation CreatePostMutation($body: String!) {
@@ -28,6 +29,20 @@ const CreatePost = () => {
   const [createPost] = useMutation(CREATE_POST_MUTATION, {
     variables: {
       body: formState.body,
+    },
+    update(cache, { data: { createPost } }) {
+      const { allPosts } = cache.readQuery({
+        query: GET_POSTS_QUERY,
+      });
+
+      cache.writeQuery({
+        query: GET_POSTS_QUERY,
+        data: {
+          allPosts: {
+            edges: [{ node: createPost.post }, ...allPosts.edges],
+          },
+        },
+      });
     },
     onCompleted: () => history.push('/'),
   });

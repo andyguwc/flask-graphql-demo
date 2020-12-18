@@ -2,12 +2,22 @@ import React from 'react';
 import { useMutation, gql } from '@apollo/client';
 import { AUTH_TOKEN, POSTS_PER_PAGE } from '../constants';
 import { timeDifferenceForDate } from '../utils';
+import { GET_POSTS_QUERY } from './PostList';
 
 const VOTE_MUTATION = gql`
   mutation VoteMutation($postId: Int!) {
     createVote(postId: $postId) {
       vote {
         id
+        post {
+          id
+          author {
+            id
+          }
+        }
+        author {
+          id
+        }
       }
     }
   }
@@ -17,13 +27,36 @@ const Post = (props) => {
   const { post } = props;
   const authToken = localStorage.getItem(AUTH_TOKEN);
 
-  const take = POSTS_PER_PAGE;
-  const skip = 0;
-  const orderBy = { createdAt: 'desc' };
-
   const [vote] = useMutation(VOTE_MUTATION, {
     variables: {
       postId: post.id,
+    },
+    update: (cache, { data: { vote } }) => {
+      const { allPosts } = cache.readQuery({
+        query: GET_POSTS_QUERY,
+      });
+
+      console.log(allPosts);
+
+      const updatedPosts = allPosts.edges.map(({ node }) => {
+        if (node.id === post.id) {
+          const newPost = {
+            ...node,
+            votes: { edges: [...node.votes.edges, vote] },
+          };
+          return newPost;
+        }
+        return node;
+      });
+
+      cache.writeQuery({
+        query: GET_POSTS_QUERY,
+        data: {
+          allPosts: {
+            edges: updatedPosts,
+          },
+        },
+      });
     },
   });
 
